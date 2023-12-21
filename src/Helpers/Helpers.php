@@ -7,6 +7,17 @@ trait Helpers {
 }
 
 trait Logs {
+    public function created()
+    {
+        header("HTTP/1.1 201 Created");
+        echo json_encode(["success" => true]);
+    }
+
+    public function pdoException(string $message) {
+        header("HTTP/1.1 500 Internal Server Error");
+        throw new \PDOException($message);
+    }
+
     public function badRequest(string $message) {
         header("HTTP/1.1 400 Bad Request");
         throw new \Exception($message);
