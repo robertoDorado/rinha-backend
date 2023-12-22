@@ -22,23 +22,25 @@ class Pessoa
 
     public function countTotalData()
     {
-        echo "total de 49596 pessoas";
+        $model = new Model();
+        echo $model->countTotalData()["total_pessoas"];
     }
 
     public function searchPessoa(Request $request)
     {
-        if (!empty($request->get())) {
-            echo json_encode($request->get());
-        } else {
-            echo "123";
+        if (empty($request->get("t"))) {
+            $this->badRequest("a query string não foi informada");
         }
+
+        $model = new Model();
+        echo json_encode($model->getPessoaByQueryString($request->get("t")));
     }
 
     public function getPessoaById(Request $request)
     {
         if (!empty($request->parameters())) {
-            echo json_encode($request->id);
-            die;
+            $model = new Model();
+            echo json_encode($model->getPessoaByUuid($request->uuid));
         }
     }
 

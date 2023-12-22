@@ -2,6 +2,7 @@
 
 namespace Src\Core;
 
+use Helpers;
 use Logs;
 use PDO;
 use PDOException;
@@ -23,6 +24,64 @@ class Model
     }
 
     use Logs;
+    use Helpers;
+
+    public function getPessoaByQueryString(string $term): array
+    {
+        $columns = "uuid AS id, apelido, nome, nascimento, stack";
+        $sql = "SELECT {$columns} FROM pessoas WHERE nome LIKE ? LIMIT 50";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(1, "%{$term}%");
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            return $this->processStmt($stmt);
+        }
+        
+        $sql = "SELECT {$columns} FROM pessoas WHERE apelido LIKE ? LIMIT 50";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(1, "%{$term}%");
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+            return $this->processStmt($stmt);
+        }
+
+        $sql = "SELECT {$columns} FROM pessoas WHERE stack LIKE ? LIMIT 50";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(1, "%{$term}%");
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+            return $this->processStmt($stmt);
+        }
+
+        return [];
+    }
+
+    public function getPessoaByUuid(string $uuid): array
+    {
+        $sql = "SELECT uuid AS id, apelido, nome, nascimento, stack FROM pessoas WHERE uuid = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(1, $uuid);
+        $stmt->execute();
+        if ($stmt->rowCount() == 0) {
+            $this->notFound("objeto não encontrado");
+        }
+
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        $data["stack"] = json_decode($data["stack"]);
+
+        return $data;
+    }
+
+    public function countTotalData()
+    {
+        $sql = "SELECT COUNT(id) AS total_pessoas FROM pessoas";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
     public function insert(array $bodyData)
     {
@@ -69,6 +128,15 @@ class Model
             $bodyData["stack"] = json_encode($bodyData["stack"]);
         }
 
+        $query = "SELECT * FROM pessoas WHERE apelido = ? AND nome= ?";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->bindValue(1, $bodyData["apelido"]);
+        $stmt->bindValue(2, $bodyData["nome"]);
+        $stmt->execute();
+        if ($stmt->rowCount() > 0) {
+            $this->invalidRequest("este usuário já foi criado");
+        }
+
         try {
             $bodyData["stack"] = empty($bodyData["stack"]) ? null : $bodyData["stack"];
             $query = "INSERT INTO pessoas (uuid, apelido, nome, nascimento, stack) VALUES (?, ?, ?, ?, ?)";
@@ -80,7 +148,14 @@ class Model
             $stmt->bindValue(5, $bodyData["stack"]);
             $stmt->execute();
             
-            $this->created();
+            $id = $this->pdo->lastInsertId();
+            $query = "SELECT uuid FROM pessoas WHERE id = ?";
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bindValue(1, $id);
+            $stmt->execute();
+
+            $data = $stmt->rowCount() > 0 ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            $this->created($data["uuid"]);
         } catch (PDOException $e) {
             $this->pdoException($e->getMessage());
         }

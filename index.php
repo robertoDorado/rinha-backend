@@ -10,7 +10,7 @@ $router->group("/");
 $router->post("/pessoas", "Pessoa::setPessoa");
 $router->get("/pessoas", "Pessoa::searchPessoa");
 $router->get("/contagem-pessoas", "Pessoa::countTotalData");
-$router->get("/pessoas/{id}", "Pessoa::getPessoaById");
+$router->get("/pessoas/{uuid}", "Pessoa::getPessoaById");
 
 $router->execute();
 $router->errorRouter();
