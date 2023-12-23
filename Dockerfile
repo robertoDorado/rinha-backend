@@ -2,7 +2,7 @@
 FROM php:7.4-fpm
 RUN docker-php-ext-install pdo pdo_mysql mysqli
 
-# Instalação do driver libpq-dev
+# Instalação do driver libpq-dev para auxiliar na instalação do composer
 RUN apt-get update \
     && apt-get install -y libpq-dev
 
